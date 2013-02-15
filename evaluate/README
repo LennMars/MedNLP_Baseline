@@ -1,0 +1,38 @@
+- experiment.pl
+
+usage: experiment.pl [-d dict]... [-d1 depth] [-d2 depth] [-mod] [-h] [-c file] -m model input
+
+CRF++ のモデルファイルが得られている時, input に与えられたプレーンテキストにタグ付けして XML にする.
+モデルファイルは -m で与える (必須).
+-c で正解が与えられていれば conlleval.pl に渡せるように比較したファイルも生成する (cmp.txt).
+モデルの訓練時に辞書とのマッチの情報を使っている場合, 同じ辞書を -d で与える.
+-d1, -d2, -mod, -h は xml_to_charwise_iob.pl に渡される.
+
+
+- crfout_to_xml.pl
+
+conlleval 形式のタグ付け結果から XML を生成する.
+
+usage: crfout_to_xml.pl < (conlleval形式ファイル)
+
+IOB部分は'-'で分割され, 3番目の要素がある場合は modality の値と解釈される.
+例えば I-C-negation は <C modality="negation"> のように変換される.
+
+
+- xml_to_charwise_iob.pl
+
+usage: xml_to_charwise_iob.pl [-d1 depth] [-d2 depth] [-mod] [-h] file1 [file2]
+
+XML からトークンを 1 文字ずつに取った conlleval 形式に変換する.
+2 ファイルを入力することも出来, この場合 1 トークンに両方のタグの情報を付けて出力する. タグと空白を除いて一致しない場合はエラーを返す.
+
+-d1, -d2 は出力に反映させるタグの最低の深さを指定する. 例えば -d1 1 を指定し, file1 が
+<a>x<b>y</b></a>
+の場合出力は
+x	O
+y	I-b
+となる.
+
+-mod は modality の値を出力するよう指定する.
+
+-h は出力を人間に読みやすい形式にする.

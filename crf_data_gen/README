@@ -1,0 +1,31 @@
+- get_feature.pl
+
+プレーンテキストから crf_test 入力形式に変換する.
+
+usage: get_feature.pl [-d dict]... input
+
+素性は順に, 品詞, 品詞細分類, 読み, 辞書マッチ BIO (下で詳述).
+
+-d で辞書ファイルを複数指定可. 各トークンについて, 辞書へのマッチの先頭 (I) か途中 (I) かマッチ外 (O) かを辞書の指定順に並べたものを素性に加える. 例えば辞書を 2 つ指定して, 見ているトークンを含む部分文字列が 1 つ目の辞書の何らかの単語にマッチしており, このトークンがマッチの先頭であった場合, 素性は BO となる.
+
+
+- parse.pl
+
+get_feature.pl の XML 対象版. XML から crf_learn 入力形式に変換する.
+
+usage: parse.pl [-tag t1,t2,...] [-notag t1,t2,...] [-attr] [-d dict]... input.xml
+
+-tag で出力するタグ, -notag で無視するタグを指定できる. 出力するタグのデフォルトは @output_tags を見よ. 被った場合は -notag が優先する.
+
+-attr で modality の値も出力するように指定できる. 例えば <c modality="negation">腹痛</c> は -attr が指定されていれば 腹痛\tI-c-negation のように出力される. -attr が指定されていなかったり modality 属性が付いていなかったら 腹痛\tI-c のようになる. 現在 modality 属性以外の属性の出力には対応していない.
+また、特定の modality の値は negation に変換されるようになっている. 変換テーブルは %attr_value_conversion を参照. これは現在オプションでは指定できない.
+
+
+- k_fold_split.pl
+
+入力 XML ファイルをクロスバリデーション用に分割するためのスクリプト. 分割の単位はルート直下のタグ.
+
+
+- randomize.ml
+
+入力をシャッフルしてタグを残したバージョンと消したバージョンを出力する.
