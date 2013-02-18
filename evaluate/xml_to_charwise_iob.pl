@@ -12,8 +12,8 @@ if ($#ARGV == -1) {
     exit 1;
 }
 
-my $start_depth_correct = 0;
-my $start_depth_answer = 0;
+my $start_depth_correct = 1;
+my $start_depth_answer = 1;
 my $is_modality_concerned = 0;
 my $wild_char = '';
 my $is_readable_mode = 0;

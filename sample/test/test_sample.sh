@@ -31,7 +31,7 @@ echo "converting CRF++ output into XML format."
 ../../evaluate/crfout_to_xml.pl < $outdir/crfout.txt > $outdir/crfout.xml
 
 echo "comparing output with correct tagging."
-../../evaluate/xml_to_charwise_iob.pl -d1 1 -d2 1 -mod -h ../../sample/learn/sample.xml $outdir/crfout.xml > $outdir/cmp.txt
+../../evaluate/xml_to_charwise_iob.pl -mod -h ../../sample/learn/sample.xml $outdir/crfout.xml > $outdir/cmp.txt
 
 echo "done.\n"
 

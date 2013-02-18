@@ -11,7 +11,7 @@ binmode STDOUT, ":encoding(utf-8)";
 if ($#ARGV == -1) {
     print "usage: experiment.pl [-d dict]... [-d1 depth] [-d2 depth] [-mod] [-h] [-c file] -m model input
 -d dict: 特徴量に用いる辞書ファイル. 複数指定可能.
--d1/d2 depth: XML から IOB フォーマットへの変換時にこの値以上ネストしている所のみ出力する. デフォルト0.
+-d1/d2 depth: XML から IOB フォーマットへの変換時にこの値以上ネストしている所のみ出力する. デフォルト 1.
 -c file: file を正解 XML ファイルとして IOB フォーマットへの変換時に比較を行う.
 -mod: -c 設定時のみ有効. 正解ファイル中の modality を考慮する.
 -h: CRF 出力の評価用形式を読みやすい形にする
