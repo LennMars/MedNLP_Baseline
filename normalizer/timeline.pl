@@ -26,22 +26,32 @@ sub convert_tag {
     my $node = shift;
     my $name = $node->nodeName;
     if ($name =~ /[cC]/) {
-        $node->setNodeName('treatment');
-    } elsif ($name =~ /[mM]/) {
         $node->setNodeName('symptom');
+    } elsif ($name =~ /[mM]/) {
+        $node->setNodeName('treatnment');
     } else {
         $node->setNodeName('condition');
     }
 }
 
+sub copy_attributes {
+    my $source = shift;
+    my $dist = shift;
+    map {
+        /\s*(.+)="(.+)"/ or die "malformed attribute: $_";
+        $dist->setAttribute($1, $2);
+    } ($source->attributes());
+}
+
 sub proc_node {
-    my ($text_acc_ref, $tag_acc_ref, $time_ref, $node) = @_;
+    my ($text_acc_ref, $tag_acc_ref, $time_node_ref, $node) = @_;
         if ($node->nodeName eq $time_tag) {
             my $text = join '', @$text_acc_ref;
             if ($text !~ /^\s*$/) {
                 # event
                 my $event = $timeline->createElement('event');
-                $event->setAttribute('date', $$time_ref);
+                $event->setAttribute('date', $$time_node_ref->textContent());
+                copy_attributes($$time_node_ref, $event);
                 map {$event->appendChild($_)} @$tag_acc_ref;
                 # text
                 if (!$to_deter_original_text) {
@@ -55,7 +65,7 @@ sub proc_node {
             }
             @$tag_acc_ref = ();
             @$text_acc_ref = ();
-            $$time_ref = $node->textContent;
+            $$time_node_ref = $node;
         } elsif ($node->nodeName eq '#text') {
             push @$text_acc_ref, $node->nodeValue;
         } elsif ($node->nodeName eq 'medtexts') {
@@ -73,10 +83,10 @@ sub traverse {
 
     my @text_acc = ();
     my @tag_acc = ();
-    my $time = 'top';
+    my $time_node;
 
     while (1) {
-        proc_node (\@text_acc, \@tag_acc, \$time, $node);
+        proc_node (\@text_acc, \@tag_acc, \$time_node, $node);
 
         # move node
         if ($node->hasChildNodes()) { # go down

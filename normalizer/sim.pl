@@ -11,7 +11,7 @@ use Getopt::Long qw(:config posix_default no_ignore_case gnu_compat);
 binmode(STDIN, ":encoding(utf8)");
 binmode(STDOUT, ":utf8");
 
-# ./sim.pl "遊離コレステロール" Master_T.txt "F/遊離"
+# ./sim.pl -m tables/Master_M.txt -r "XX/アク" アクチダス XXチダス ビルレクス
 foreach (@ARGV) {$_ = decode('utf8', $_);}
 
 my $master_file;
@@ -54,7 +54,7 @@ sub search {
             }
         }
     }
-    return $max_codes[0];
+    return (@max_codes < 20) ? (join ',', @max_codes) : '';
 }
 
 sub read_rules {
@@ -90,9 +90,10 @@ sub paraphrase {
         my @n = split(/,/, $rule->[0]);
         foreach my $tmp (@n) {
             next unless ($input =~ /$tmp/);
-            if  ($tmp =~ /^\w+$/ && $input =~ /(.*)$tmp(.*)/) {
+            my $w = "0-9A-z";
+            if  ($tmp =~ /^$w+$/ && $input =~ /(.*)$tmp(.*)/) {
                 # アルファベットの部分一致を無視する
-                next if (($1 =~ /\w$/) or ($2 =~ /^\w/));
+                next if (($1 =~ /$w$/) or ($2 =~ /^$w/));
             }
             # パラフレーズを表示
             # print "change[".$input."]".$tmp."-->".$rule->[1]."\n";
@@ -137,9 +138,10 @@ sub get_sim {
         }
         if ($sim == 0) { # STEP2: 構成要素の部分一致をみる
             foreach (@n2) {
-                if (length($tmp) >= 1 && $tmp =~ /^\w+$/ && $_ =~ /(.*)$tmp(.*)/) {
+                my $w = "0-9A-z";
+                if (length($tmp) >= 1 && $tmp =~ /^$w+$/ && $_ =~ /(.*)$tmp(.*)/) {
                     # アルファベットの部分一致を無視する
-                    next if ($1 =~ /\w$/) or ($2 =~ /^\w/);
+                    next if ($1 =~ /$w$/) or ($2 =~ /^$w/);
                     $sim = length($tmp) / 2;
                     #print "partly match [". $tmp2."]-[".$tmp."]".$1."\n";
                 }

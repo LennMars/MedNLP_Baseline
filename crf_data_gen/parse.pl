@@ -6,15 +6,16 @@ use MeCab;
 #see http://d.hatena.ne.jp/tagomoris/20120918/1347991165 for this configuration
 use Getopt::Long qw(:config posix_default no_ignore_case gnu_compat);
 use Encode;
-use Algorithm::AhoCorasick qw(find_all);
-use Set::IntervalTree;
 use HTML::Entities;
+use FindBin;
+use lib "$FindBin::Bin";
+use MednlpFeature;
 binmode STDOUT, ":encoding(utf-8)";
 
 if ($#ARGV < 0) {die "Usage: parse.pl [-tag t1,t2,...] [-notag t1,t2,...] [-attr] [-d dict]... input.xml\n";}
 
 # command line option handling
-my @output_tags = ('a', 't', 'h', 'l', 'x', 'd', 'c', 'C', 'H', 'LOC', 'M', 'M1', 'T', 'T1', 'X'); # default tags to output
+my @output_tags = ('mn', 'ms', 'm', 'a', 't', 'h', 'l', 'x', 'd', 'cn', 'cs', 'c', 'C', 'H', 'LOC', 'M', 'M1', 'T', 'T1', 'X'); # default tags to output
 my @no_output_tags = (); # exclusion
 
 my $to_use_modality = 0;
@@ -34,7 +35,7 @@ my $pos_in_text = 0;
 
 init_output_tags();
 my @dictionaries = init_dictionaries(\@dictionary_files);
-my @word_intervals = init_word_intervals($text, \@dictionaries);
+init_word_intervals($text, \@dictionaries);
 
 
 &traverse($doc);
@@ -65,40 +66,14 @@ sub init_output_tags {
         ! $found} @output_tags;
 }
 
-sub init_dictionaries {
-    my $dictionary_files = shift;
-    return map {
-        open DICT, $_ or die;
-        binmode DICT, ":encoding(utf-8)";
-        my @dict = <DICT>;
-        close DICT;
-        map {chomp;} @dict;
-        \@dict;
-    } @$dictionary_files;
-}
-
-# search words in dictionaries and convert founds into interval
-sub init_word_intervals {
-    my $input_joined = shift;
-    my $dictionaries = shift;
-    return map {
-        my $interval = Set::IntervalTree->new;
-        my $found = find_all($input_joined, @{$_});
-        foreach my $pos (keys %$found) {
-            my $pos2 = $pos + length($found->{$pos}->[0]);
-            $interval->insert($pos, $pos, $pos2);
-        }
-        $interval;
-    } @$dictionaries;
-}
-
-sub print_iob_sequence {
+sub iob_sequence_to_string {
     my $iobs_ref = shift;
-    foreach (@$iobs_ref) {
+    my @iob_strs = map {
         my @iob = @$_;
         @iob = map {(defined && $_ ne '') ? $_ : '*'} @iob; # avoid empty column
-        print ((join ' ', @iob)."\n");
-    }
+        join ' ', @iob;
+    } (@$iobs_ref);
+    return join "\n", @iob_strs;
 }
 
 sub get_iob_sequence {
@@ -117,18 +92,10 @@ sub get_iob_sequence {
         next if ($class1 =~ /BOS|EOS/);
 
         my $surface = decode("utf8", $node->{surface});
-
-        # generate feature from dictionary
         my $pos_temp = index($text, $surface, $pos_in_text);
-        my @iobs_from_dict = map {
-            my $interval = $_->fetch($pos_temp, $pos_temp + 1);
-            if (@$interval) {
-                ($interval->[0] == $pos_temp) ? 'B' : 'I';
-            } else {
-                'O';
-            }
-        } @word_intervals;
-        my $iobs_from_dict_str = join '', @iobs_from_dict;
+        my $iobs_from_dict_str = bio_from_intervals($pos_temp);
+        my $letter_type = letter_type($surface);
+        my $last_char = substr $surface, -1;
 
         # forward position
         $pos_in_text = $pos_temp + length($surface);
@@ -138,17 +105,8 @@ sub get_iob_sequence {
 
         my $tag = ($type eq 'O') ? 'O' : ($is_first ? "B-${type}" : "I-${type}");
         $is_first = 0;
-        my @iob = ($surface, $class1, $class2, $read, $iobs_from_dict_str, $tag);
+        my @iob = ($surface, $class1, $class2, $read, $iobs_from_dict_str, $letter_type, $last_char, $tag);
         push @iobs, \@iob;
-    }
-
-    # add a line break for each end of sentences
-    if (substr ($string, -1) eq "\n") {
-        my $iob_last = pop @iobs;
-        if (defined $iob_last) {
-            push @$iob_last, "\n";
-            push @iobs, $iob_last;
-        }
     }
 
     return \@iobs;
@@ -178,16 +136,25 @@ sub print_leaf {
     my $node = shift;
     my $name = $node->nodeName();
 
-    my $iobs;
     if (grep {$name =~ /^$_$/} @output_tags) {
-        $iobs = get_iob_sequence(get_modality($node), $node->textContent);
+        my $iobs = get_iob_sequence(get_modality($node), $node->textContent);
+        my $str = iob_sequence_to_string $iobs;
+        print "$str\n";
     } else {
         my $parent_name = $node->parentNode()->nodeName();
         unless ($node->hasChildNodes() || grep {$parent_name =~ /^$_$/} @output_tags) {
-            $iobs = get_iob_sequence('O', $node->textContent);
+            my $content = $node->textContent;
+            $content =~ s/^\s+//;
+            my @contents = split "\n+", $content;
+            my @strs = map {
+                my $iobs = get_iob_sequence('O', $_);
+                iob_sequence_to_string $iobs;
+            } @contents;
+            my $output = join "\n\n", @strs;
+            print $output;
+            print ($node->textContent =~ /\n$/ ? "\n\n" : "\n") if $output;
         }
     }
-    print_iob_sequence $iobs if defined $iobs;
 }
 
 sub traverse {

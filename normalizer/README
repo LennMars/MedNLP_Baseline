@@ -1,0 +1,34 @@
+- normalizer.pl
+
+Usage: normalizer.pl TAG DICT ATTR < INPUT
+
+入力 XML の TAG タグについてそのテキストを辞書 DICT を用いて正規化する.
+結果は ATTR 属性に記録される.
+正規化においては sim.pl が呼ばれる. sim.pl はこのスクリプトと同じディレクトリにある必要がある.
+
+
+- sim.pl
+
+Usage: sim.pl -m table [-r "A/B"]... INPUT...
+Example: sim.pl -m tables/Master_M.txt -r "XX/アク" アクチダス XXチダス ビルレクス
+
+入力単語を正規化する.
+-m オプション(必須)は正規化テーブルを指定する.
+-r オプション(複数指定可)は入力の部分的な変換を, 変換前と後をスラッシュで区切って指定する.
+入力は複数指定可である.
+
+
+- date_normalizer.pl
+
+Usage: date_normalizer.pl [-t tag] < INPUT
+
+時間を表すタグ(オプション t で指定可)を順に date2value.pl に入力し, 結果を absolute 属性に記録する.
+
+
+- timeline.pl
+
+Usage: timeline.pl [-t tag] [-q] XML
+
+入力から各タグを切り出して時間タグが現れるところで分割した XML を返す.
+-t tag は tag を時間を表したタグだと見なす(デフォルトは t).
+-q は, 各イベントに対応するオリジナルのテキストを表示しないようにする.
